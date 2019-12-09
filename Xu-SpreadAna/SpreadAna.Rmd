@@ -62,30 +62,6 @@ SSX<-function(id.start){
    return( hedgePV.id[1:(which.min(hedgePV.id[(1):id.run]))]) 
   }
   
-  
-  # 
-  # tt<-0
-  # for(j in 3:(T.len-id.start)){
-  #   
-  #   if(k%%2==1){
-  #     if(maxDrawdown(hedgeReturn.id[1:j])>= thred){
-  #      tt=1
-  #        
-  #       return(hedgePV.id[1:(which.max(hedgePV.id[1:j]))])
-  #     }
-  #   }else if(k%%2==0){
-  #     if(maxRunup(hedgeReturn.id[1:j])>= thred){
-  #      tt=1
-  #      
-  #      return(hedgePV.id[1:(which.min(hedgePV.id[1:j]))])
-  #     }
-  #   }
-  #   
-  # }
-  # if(tt==0){
-  #    return(hedgePV.id)
-  # }
-  
 }
 ## plot
 hedgePlot<-xts(rep(1,nrow(hedgePV)),order.by=index(hedgePV))
