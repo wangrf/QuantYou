@@ -12,7 +12,7 @@ Try executing this chunk by clicking the *Run* button within the chunk or by pla
 rm(list=ls())
 
 source(file.path(substr(getwd(),1,22),"header.R"))
-thred=0.1
+thred=0.1 ## set maxDrawdown or Runup threshold
 symA="000016.SH"
 symB="000905.SH"
 
@@ -23,7 +23,7 @@ loadRData(symB)
 alignSymbols(c(symA,symB))
 
 closeTS<-merge_ind(c(symA,symB),"close")
-closeTS<-closeTS[-c(723:730),]
+closeTS<-closeTS[-c(723:730),] ## these data are wrong
 
 
 closeTS[,1]<-closeTS[,1]/as.numeric(closeTS[1,1])
@@ -44,19 +44,20 @@ SSX<-function(id.start){
   hedgeReturn.id<-Return.calculate(hedgePV.id)
   
   
-  
+  ## calculate max drawdowns and runups from id.start to the end
   hedge.draw<-Drawdowns(hedgeReturn.id)
   hedge.run<-Runups(hedgeReturn.id)
   
-  id.draw<-which(hedge.draw< -0.1)[1]
-  id.run<-which(hedge.run>0.122)[1]
+  id.draw<-which(hedge.draw< -1* thred)[1]
+  id.run<-which(hedge.run>thred)[1]
   
   if(is.na(id.draw)|is.na(id.run)){
     return(hedgePV.id)
   }
   
   if(id.draw>id.run){
-    
+    ## find the first drawdown which exceed the thred, say id.draw
+    ## then return the timeseries from id.start to the date where netValue is max in id.start to id.draw
    return( hedgePV.id[1:(which.max(hedgePV.id[(1):id.draw]))])
     
   }else{
@@ -88,9 +89,9 @@ SSX<-function(id.start){
   # }
   
 }
-
+## plot
 hedgePlot<-xts(rep(1,nrow(hedgePV)),order.by=index(hedgePV))
-names(hedgePlot)<-paste0("long 1 RMB ", symA," short 1 RMB ",symB," 反弹或回�?",round(thred*100,0),"%即归一")
+names(hedgePlot)<-paste0("long 1 RMB ", symA," short 1 RMB ",symB," when maxDrawdown reach ",round(thred*100,0),"then set the netValue to 1")
 plot(hedgePlot,main=names(hedgePlot),ylim=c(0.1,2))
 
 for(i in seq(0,2,by = 0.1)){
@@ -105,7 +106,7 @@ id<-which(index(hedgePV)==tail(index(mydata),1))
 
 while(id<T.len){
   
-  
+  ## plot every hedgePV.id
   print(id)
   new.data<-SSX(id)
   print(addSeries(new.data,on=1))
@@ -119,84 +120,6 @@ while(id<T.len){
 
 
 
-
-
-for(i in 2:nrow(hedgeReturn)){
-  
-  
-  
-  if(sign(hedgePV[i]-1)<0){
-    
-    maxD.i<-maxDrawdown(hedgeReturn[1:i])
-    if(maxD.i< -0.15){
-      K<-which.max(hedgePV[1:i])
-    }
-    
-  }
-  
-  if(maxD.i * sign(hedgePV[i]) < -0.15){
-    
-    which.max(hedgePV[,i])
-    
-  }
-  
-}
-  
-  
-  cumReturn<-apply.fromstart(hedgeReturn,FUN="Return.cumulative")
-  maxD<-apply.fromstart(hedgeReturn,FUN="maxDrawdown")
-  
-  
-  
-  cumReturn<-Return.cumulative(hedgeReturn)
-  
-  
-  
-  which(maxD)
-  
-  
-}
-
-
-
-
-
-
-applyInd(sym = "closeTS",
-         fun.name="minusX",
-         arguments = list(
-           x=get("closeTS"),
-           column1=paste0(symA,".close"),
-           column2=paste0(symB,".close")
-            
-         ),
-         label="priceD")
-
-
-
-
-
-
-
-
-
-applyInd(
-  sym = "closeTS",
-  fun.name = "peakValleyNewX",
-  arguments = list(
-    x = closeTS,
-    column = "priceD",
-    thresh = nDay
-  ),
-  label = "peakValley"
-)
-
-ind<-match.names("peakValley",colnames(closeTS))
-x<-closeTS[,ind]
-e.day<-index(closeTS[(which(x!=0))])
-plot(closeTS[,3])
-events<-xts(format(e.day,"%Y-%m-%d"),order.by=e.day)
-addEventLines(events,pos=2 ,srt=90)
 
 ```
 
