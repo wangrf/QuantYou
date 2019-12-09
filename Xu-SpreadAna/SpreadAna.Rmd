@@ -1,0 +1,207 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+
+rm(list=ls())
+
+source(file.path(substr(getwd(),1,22),"header.R"))
+thred=0.1
+symA="000016.SH"
+symB="000905.SH"
+
+
+
+loadRData(symA)
+loadRData(symB)
+alignSymbols(c(symA,symB))
+
+closeTS<-merge_ind(c(symA,symB),"close")
+closeTS<-closeTS[-c(723:730),]
+
+
+closeTS[,1]<-closeTS[,1]/as.numeric(closeTS[1,1])
+closeTS[,2]<-closeTS[,2]/as.numeric(closeTS[1,2])
+
+hedgePV<-closeTS[,1]-closeTS[,2]+1
+hedgeReturn<-Return.calculate(hedgePV)
+
+T.len<-nrow(hedgeReturn)
+
+SSX<-function(id.start){
+  
+  closeTS.id<-closeTS[id.start:T.len]
+  
+  closeTS.id[,1]<-closeTS.id[,1]/as.numeric(closeTS.id[1,1])
+  closeTS.id[,2]<-closeTS.id[,2]/as.numeric(closeTS.id[1,2])
+  hedgePV.id<-closeTS.id[,1]-closeTS.id[,2]+1
+  hedgeReturn.id<-Return.calculate(hedgePV.id)
+  
+  
+  
+  hedge.draw<-Drawdowns(hedgeReturn.id)
+  hedge.run<-Runups(hedgeReturn.id)
+  
+  id.draw<-which(hedge.draw< -0.1)[1]
+  id.run<-which(hedge.run>0.122)[1]
+  
+  if(is.na(id.draw)|is.na(id.run)){
+    return(hedgePV.id)
+  }
+  
+  if(id.draw>id.run){
+    
+   return( hedgePV.id[1:(which.max(hedgePV.id[(1):id.draw]))])
+    
+  }else{
+   return( hedgePV.id[1:(which.min(hedgePV.id[(1):id.run]))]) 
+  }
+  
+  
+  # 
+  # tt<-0
+  # for(j in 3:(T.len-id.start)){
+  #   
+  #   if(k%%2==1){
+  #     if(maxDrawdown(hedgeReturn.id[1:j])>= thred){
+  #      tt=1
+  #        
+  #       return(hedgePV.id[1:(which.max(hedgePV.id[1:j]))])
+  #     }
+  #   }else if(k%%2==0){
+  #     if(maxRunup(hedgeReturn.id[1:j])>= thred){
+  #      tt=1
+  #      
+  #      return(hedgePV.id[1:(which.min(hedgePV.id[1:j]))])
+  #     }
+  #   }
+  #   
+  # }
+  # if(tt==0){
+  #    return(hedgePV.id)
+  # }
+  
+}
+
+hedgePlot<-xts(rep(1,nrow(hedgePV)),order.by=index(hedgePV))
+names(hedgePlot)<-paste0("long 1 RMB ", symA," short 1 RMB ",symB," 反弹或回�?",round(thred*100,0),"%即归一")
+plot(hedgePlot,main=names(hedgePlot),ylim=c(0.1,2))
+
+for(i in seq(0,2,by = 0.1)){
+print(addSeries(xts(rep(i,nrow(hedgePV)),order.by=index(hedgePV)),on=1)  )
+}
+
+id<-1
+mydata<-SSX(id)
+addSeries(mydata,on=1)
+id<-which(index(hedgePV)==tail(index(mydata),1))
+
+
+while(id<T.len){
+  
+  
+  print(id)
+  new.data<-SSX(id)
+  print(addSeries(new.data,on=1))
+  k<-nrow(new.data)
+  mydata<-rbind(mydata,new.data)
+  id<-which(index(hedgePV)==tail(index(mydata),1))+1
+  
+  
+}
+
+
+
+
+
+
+for(i in 2:nrow(hedgeReturn)){
+  
+  
+  
+  if(sign(hedgePV[i]-1)<0){
+    
+    maxD.i<-maxDrawdown(hedgeReturn[1:i])
+    if(maxD.i< -0.15){
+      K<-which.max(hedgePV[1:i])
+    }
+    
+  }
+  
+  if(maxD.i * sign(hedgePV[i]) < -0.15){
+    
+    which.max(hedgePV[,i])
+    
+  }
+  
+}
+  
+  
+  cumReturn<-apply.fromstart(hedgeReturn,FUN="Return.cumulative")
+  maxD<-apply.fromstart(hedgeReturn,FUN="maxDrawdown")
+  
+  
+  
+  cumReturn<-Return.cumulative(hedgeReturn)
+  
+  
+  
+  which(maxD)
+  
+  
+}
+
+
+
+
+
+
+applyInd(sym = "closeTS",
+         fun.name="minusX",
+         arguments = list(
+           x=get("closeTS"),
+           column1=paste0(symA,".close"),
+           column2=paste0(symB,".close")
+            
+         ),
+         label="priceD")
+
+
+
+
+
+
+
+
+
+applyInd(
+  sym = "closeTS",
+  fun.name = "peakValleyNewX",
+  arguments = list(
+    x = closeTS,
+    column = "priceD",
+    thresh = nDay
+  ),
+  label = "peakValley"
+)
+
+ind<-match.names("peakValley",colnames(closeTS))
+x<-closeTS[,ind]
+e.day<-index(closeTS[(which(x!=0))])
+plot(closeTS[,3])
+events<-xts(format(e.day,"%Y-%m-%d"),order.by=e.day)
+addEventLines(events,pos=2 ,srt=90)
+
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
