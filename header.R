@@ -1,4 +1,4 @@
-
+library(WindR)
 library(xlsx)
 library(zoo)
 library(xts)
