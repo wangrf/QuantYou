@@ -15,6 +15,7 @@ symA="000016.SH"
 symB="000905.SH"
 
 
+#get()
 
 loadRData(symA)
 loadRData(symB)
